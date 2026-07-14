@@ -272,7 +272,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     let authorizationCode = try res.get()
                     call.resolve([ "jwt": authorizationCode.idToken ?? "", "accessToken": authorizationCode.accessToken ])
                 } catch {
-                    reject(error, call: call)
+                    self.reject(error, call: call)
                 }
             }
         }
@@ -293,7 +293,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     }
                     call.resolve(response)
                 } catch {
-                    reject(error, call: call)
+                    self.reject(error, call: call)
                 }
             }
         }
@@ -313,7 +313,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     }
                     call.resolve(response)
                 } catch {
-                    reject(error, call: call)
+                    self.reject(error, call: call)
                 }
             }
         }
@@ -354,7 +354,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     let isLogged = try res.get()
                     call.resolve([ "isLoggedIn": isLogged ])
                 } catch {
-                    reject(error, call: call)
+                    self.reject(error, call: call)
                 }
             }
         }
@@ -371,7 +371,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     let status = try res.get()
                     call.resolve([ "isLoggedIn": status ])
                 } catch {
-                    reject(error, call: call)
+                    self.reject(error, call: call)
                 }
             }
         }
@@ -447,7 +447,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 case .success(let profile):
                     call.resolve(["profile": profile as Any])
                 case .failure(let error):
-                    reject(error, call: call)
+                    self.reject(error, call: call)
                 }
             })
         case "facebook#requestTracking":
@@ -460,7 +460,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 case .success(let status):
                     call.resolve(["status": status])
                 case .failure(let error):
-                    reject(error, call: call)
+                    self.reject(error, call: call)
                 }
             })
         default:
