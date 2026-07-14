@@ -682,7 +682,7 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
                 }
             case .failure(let error):
                 if let statusCode = response.response?.statusCode {
-                    print("Apple token exchange failed with HTTP status (statusCode): (error.localizedDescription)")
+                    print("Apple token exchange failed with HTTP status \(statusCode): \(error.localizedDescription)")
                     completion(.failure(.invalidResponseCode(statusCode: statusCode)))
                 } else {
                     completion(.failure(.responseError(error)))
