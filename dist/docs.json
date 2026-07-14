@@ -1,0 +1,1187 @@
+{
+  "api": {
+    "name": "SocialLoginPlugin",
+    "slug": "socialloginplugin",
+    "docs": "",
+    "tags": [],
+    "methods": [
+      {
+        "name": "initialize",
+        "signature": "(options: InitializeOptions) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "InitializeOptions"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [
+          {
+            "name": "description",
+            "text": "initialize the plugin with the required options"
+          }
+        ],
+        "docs": "Initialize the plugin",
+        "complexTypes": [
+          "InitializeOptions"
+        ],
+        "slug": "initialize"
+      },
+      {
+        "name": "login",
+        "signature": "<T extends \"apple\" | \"google\" | \"facebook\" | \"twitter\">(options: Extract<LoginOptions, { provider: T; }>) => Promise<{ provider: T; result: ProviderResponseMap[T]; }>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "Extract<{ provider: 'facebook'; options: FacebookLoginOptions; }, { provider: T; }> | Extract<{ provider: 'google'; options: GoogleLoginOptions; }, { provider: T; }> | Extract<{ provider: 'apple'; options: AppleProviderOptions; }, { provider: T; }> | Extract<{ provider: 'twitter'; options: TwitterLoginOptions; }, { provider: T; }>"
+          }
+        ],
+        "returns": "Promise<{ provider: T; result: ProviderResponseMap[T]; }>",
+        "tags": [
+          {
+            "name": "description",
+            "text": "login with the selected provider"
+          }
+        ],
+        "docs": "Login with the selected provider",
+        "complexTypes": [
+          "T",
+          "ProviderResponseMap",
+          "LoginOptions",
+          "Extract"
+        ],
+        "slug": "login"
+      },
+      {
+        "name": "logout",
+        "signature": "(options: { provider: 'apple' | 'google' | 'facebook' | 'twitter'; }) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "{ provider: 'apple' | 'google' | 'facebook' | 'twitter'; }"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [
+          {
+            "name": "description",
+            "text": "Logout the user from the specified provider\n\n**Google Offline Mode Limitation:**\nThis method is NOT supported when Google is initialized with `mode: 'offline'`.\nIt will reject with error: \"logout is not implemented when using offline mode\""
+          },
+          {
+            "name": "throws",
+            "text": "Error if Google provider is in offline mode"
+          }
+        ],
+        "docs": "Logout",
+        "complexTypes": [],
+        "slug": "logout"
+      },
+      {
+        "name": "isLoggedIn",
+        "signature": "(options: isLoggedInOptions) => Promise<{ isLoggedIn: boolean; }>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "isLoggedInOptions"
+          }
+        ],
+        "returns": "Promise<{ isLoggedIn: boolean; }>",
+        "tags": [
+          {
+            "name": "description",
+            "text": "Check if the user is currently logged in with the specified provider\n\n**Google Offline Mode Limitation:**\nThis method is NOT supported when Google is initialized with `mode: 'offline'`.\nIt will reject with error: \"isLoggedIn is not implemented when using offline mode\""
+          },
+          {
+            "name": "throws",
+            "text": "Error if Google provider is in offline mode"
+          }
+        ],
+        "docs": "IsLoggedIn",
+        "complexTypes": [
+          "isLoggedInOptions"
+        ],
+        "slug": "isloggedin"
+      },
+      {
+        "name": "getAuthorizationCode",
+        "signature": "(options: AuthorizationCodeOptions) => Promise<AuthorizationCode>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "AuthorizationCodeOptions"
+          }
+        ],
+        "returns": "Promise<AuthorizationCode>",
+        "tags": [
+          {
+            "name": "description",
+            "text": "Get the authorization code for server-side authentication\n\n**Google Offline Mode Limitation:**\nThis method is NOT supported when Google is initialized with `mode: 'offline'`.\nIt will reject with error: \"getAuthorizationCode is not implemented when using offline mode\"\n\nIn offline mode, the authorization code (serverAuthCode) is already returned by the `login()` method."
+          },
+          {
+            "name": "throws",
+            "text": "Error if Google provider is in offline mode"
+          }
+        ],
+        "docs": "Get the current authorization code",
+        "complexTypes": [
+          "AuthorizationCode",
+          "AuthorizationCodeOptions"
+        ],
+        "slug": "getauthorizationcode"
+      },
+      {
+        "name": "refresh",
+        "signature": "(options: LoginOptions) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "LoginOptions"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [
+          {
+            "name": "description",
+            "text": "refresh the access token"
+          }
+        ],
+        "docs": "Refresh the access token",
+        "complexTypes": [
+          "LoginOptions"
+        ],
+        "slug": "refresh"
+      },
+      {
+        "name": "providerSpecificCall",
+        "signature": "<T extends ProviderSpecificCall>(options: { call: T; options: ProviderSpecificCallOptionsMap[T]; }) => Promise<ProviderSpecificCallResponseMap[T]>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "{ call: T; options: ProviderSpecificCallOptionsMap[T]; }"
+          }
+        ],
+        "returns": "Promise<ProviderSpecificCallResponseMap[T]>",
+        "tags": [
+          {
+            "name": "description",
+            "text": "Execute a provider-specific functionality"
+          }
+        ],
+        "docs": "Execute provider-specific calls",
+        "complexTypes": [
+          "ProviderSpecificCallResponseMap",
+          "T",
+          "ProviderSpecificCall",
+          "ProviderSpecificCallOptionsMap"
+        ],
+        "slug": "providerspecificcall"
+      },
+      {
+        "name": "getPluginVersion",
+        "signature": "() => Promise<{ version: string; }>",
+        "parameters": [],
+        "returns": "Promise<{ version: string; }>",
+        "tags": [
+          {
+            "name": "returns",
+            "text": "an Promise with version for this device"
+          },
+          {
+            "name": "throws",
+            "text": "An error if the something went wrong"
+          }
+        ],
+        "docs": "Get the native Capacitor plugin version",
+        "complexTypes": [],
+        "slug": "getpluginversion"
+      }
+    ],
+    "properties": []
+  },
+  "interfaces": [
+    {
+      "name": "InitializeOptions",
+      "slug": "initializeoptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "twitter",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "{ clientId: string; redirectUrl: string; defaultScopes?: string[] | undefined; forceLogin?: boolean | undefined; audience?: string | undefined; } | undefined"
+        },
+        {
+          "name": "facebook",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "{ appId: string; clientToken?: string | undefined; locale?: string | undefined; } | undefined"
+        },
+        {
+          "name": "google",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "{ iOSClientId?: string | undefined; iOSServerClientId?: string | undefined; webClientId?: string | undefined; mode?: 'online' | 'offline' | undefined; hostedDomain?: string | undefined; redirectUrl?: string | undefined; } | undefined"
+        },
+        {
+          "name": "apple",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "{ clientId?: string | undefined; redirectUrl?: string | undefined; useProperTokenExchange?: boolean | undefined; useBroadcastChannel?: boolean | undefined; } | undefined"
+        }
+      ]
+    },
+    {
+      "name": "FacebookLoginResponse",
+      "slug": "facebookloginresponse",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "accessToken",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [
+            "AccessToken"
+          ],
+          "type": "AccessToken | null"
+        },
+        {
+          "name": "idToken",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | null"
+        },
+        {
+          "name": "profile",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "{ userID: string; email: string | null; friendIDs: string[]; birthday: string | null; ageRange: { min?: number | undefined; max?: number | undefined; } | null; gender: string | null; location: { id: string; name: string; } | null; hometown: { id: string; name: string; } | null; profileURL: string | null; name: string | null; imageURL: string | null; }"
+        }
+      ]
+    },
+    {
+      "name": "AccessToken",
+      "slug": "accesstoken",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "applicationId",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "declinedPermissions",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string[] | undefined"
+        },
+        {
+          "name": "expires",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "isExpired",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "lastRefresh",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "permissions",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string[] | undefined"
+        },
+        {
+          "name": "token",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "tokenType",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "refreshToken",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "userId",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "GoogleLoginResponseOnline",
+      "slug": "googleloginresponseonline",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "accessToken",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [
+            "AccessToken"
+          ],
+          "type": "AccessToken | null"
+        },
+        {
+          "name": "idToken",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | null"
+        },
+        {
+          "name": "profile",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "{ email: string | null; familyName: string | null; givenName: string | null; id: string | null; name: string | null; imageUrl: string | null; }"
+        },
+        {
+          "name": "responseType",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "'online'"
+        }
+      ]
+    },
+    {
+      "name": "GoogleLoginResponseOffline",
+      "slug": "googleloginresponseoffline",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "serverAuthCode",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "responseType",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "'offline'"
+        }
+      ]
+    },
+    {
+      "name": "AppleProviderResponse",
+      "slug": "appleproviderresponse",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "accessToken",
+          "tags": [
+            {
+              "text": "Content depends on `useProperTokenExchange` setting:\n- When `useProperTokenExchange: true`: Real access token from Apple (~1 hour validity)\n- When `useProperTokenExchange: false`: Contains authorization code as token (legacy mode)\nUse `idToken` for user authentication, `accessToken` for API calls when properly exchanged.",
+              "name": "description"
+            }
+          ],
+          "docs": "Access token from Apple",
+          "complexTypes": [
+            "AccessToken"
+          ],
+          "type": "AccessToken | null"
+        },
+        {
+          "name": "idToken",
+          "tags": [
+            {
+              "text": "Always contains the JWT with user identity information including:\n- User ID (sub claim)\n- Email (if user granted permission)\n- Name components (if user granted permission)\n- Email verification status\nThis is the primary token for user authentication and should be verified on your backend.",
+              "name": "description"
+            }
+          ],
+          "docs": "Identity token (JWT) from Apple",
+          "complexTypes": [],
+          "type": "string | null"
+        },
+        {
+          "name": "profile",
+          "tags": [
+            {
+              "text": "Basic user profile data extracted from the identity token and Apple response:\n- `user`: Apple's user identifier (sub claim from idToken)\n- `email`: User's email address (if permission granted)\n- `givenName`: User's first name (if permission granted)\n- `familyName`: User's last name (if permission granted)",
+              "name": "description"
+            }
+          ],
+          "docs": "User profile information",
+          "complexTypes": [],
+          "type": "{ user: string; email: string | null; givenName: string | null; familyName: string | null; }"
+        },
+        {
+          "name": "authorizationCode",
+          "tags": [
+            {
+              "text": "Only present when `useProperTokenExchange` is `true`. This code should be exchanged\nfor proper access tokens on your backend using Apple's token endpoint. Use this for secure\nserver-side token validation and to obtain refresh tokens.",
+              "name": "description"
+            },
+            {
+              "text": "https ://developer.apple.com/documentation/sign_in_with_apple/tokenresponse",
+              "name": "see"
+            }
+          ],
+          "docs": "Authorization code for proper token exchange (when useProperTokenExchange is enabled)",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "TwitterLoginResponse",
+      "slug": "twitterloginresponse",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "accessToken",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [
+            "AccessToken"
+          ],
+          "type": "AccessToken | null"
+        },
+        {
+          "name": "refreshToken",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | null | undefined"
+        },
+        {
+          "name": "scope",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string[]"
+        },
+        {
+          "name": "tokenType",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "'bearer'"
+        },
+        {
+          "name": "expiresIn",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "number | null | undefined"
+        },
+        {
+          "name": "profile",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [
+            "TwitterProfile"
+          ],
+          "type": "TwitterProfile"
+        }
+      ]
+    },
+    {
+      "name": "TwitterProfile",
+      "slug": "twitterprofile",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "id",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "username",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | null"
+        },
+        {
+          "name": "profileImageUrl",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | null"
+        },
+        {
+          "name": "verified",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "boolean"
+        },
+        {
+          "name": "email",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | null | undefined"
+        }
+      ]
+    },
+    {
+      "name": "FacebookLoginOptions",
+      "slug": "facebookloginoptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "permissions",
+          "tags": [
+            {
+              "text": "select permissions to login with",
+              "name": "description"
+            }
+          ],
+          "docs": "Permissions",
+          "complexTypes": [],
+          "type": "string[]"
+        },
+        {
+          "name": "limitedLogin",
+          "tags": [
+            {
+              "text": "use limited login for Facebook iOS only. Important: This is iOS-only and doesn't affect Android.\nEven if set to false, Facebook will automatically force it to true if App Tracking Transparency (ATT) permission is not granted.\nDevelopers should always be prepared to handle both limited and full login scenarios.",
+              "name": "description"
+            },
+            {
+              "text": "false",
+              "name": "default"
+            }
+          ],
+          "docs": "Is Limited Login",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "nonce",
+          "tags": [
+            {
+              "text": "A custom nonce to use for the login request",
+              "name": "description"
+            }
+          ],
+          "docs": "Nonce",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "GoogleLoginOptions",
+      "slug": "googleloginoptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "scopes",
+          "tags": [
+            {
+              "text": "[\"profile\", \"email\"]",
+              "name": "example"
+            },
+            {
+              "text": " [Google OAuth2 Scopes](https://developers.google.com/identity/protocols/oauth2/scopes)",
+              "name": "see"
+            }
+          ],
+          "docs": "Specifies the scopes required for accessing Google APIs\nThe default is defined in the configuration.",
+          "complexTypes": [],
+          "type": "string[] | undefined"
+        },
+        {
+          "name": "nonce",
+          "tags": [
+            {
+              "text": "nonce",
+              "name": "description"
+            }
+          ],
+          "docs": "Nonce",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "forceRefreshToken",
+          "tags": [
+            {
+              "text": "force refresh token",
+              "name": "description"
+            },
+            {
+              "text": "false",
+              "name": "default"
+            },
+            {
+              "text": "On Android, the OS caches access tokens, and if a token is invalid (e.g., user revoked app access), the plugin might return an invalid accessToken. Using getAuthorizationCode() is recommended to ensure the token is valid.",
+              "name": "note"
+            }
+          ],
+          "docs": "Force refresh token (only for Android)",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "forcePrompt",
+          "tags": [
+            {
+              "text": "forces the account selection prompt to appear on iOS",
+              "name": "description"
+            },
+            {
+              "text": "false",
+              "name": "default"
+            }
+          ],
+          "docs": "Force account selection prompt (iOS)",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "style",
+          "tags": [
+            {
+              "text": "style",
+              "name": "description"
+            },
+            {
+              "text": "'standard'",
+              "name": "default"
+            }
+          ],
+          "docs": "Style",
+          "complexTypes": [],
+          "type": "'bottom' | 'standard' | undefined"
+        },
+        {
+          "name": "filterByAuthorizedAccounts",
+          "tags": [
+            {
+              "text": "Only show accounts that have previously been used to sign in to the app.\nThis option is only available for the 'bottom' style.\nNote: For Family Link supervised accounts, this should be set to false.",
+              "name": "description"
+            },
+            {
+              "text": "true",
+              "name": "default"
+            }
+          ],
+          "docs": "Filter by authorized accounts (Android only)",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "autoSelectEnabled",
+          "tags": [
+            {
+              "text": "Automatically select the account if only one Google account is available.\nThis option is only available for the 'bottom' style.",
+              "name": "description"
+            },
+            {
+              "text": "false",
+              "name": "default"
+            }
+          ],
+          "docs": "Auto select enabled (Android only)",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "prompt",
+          "tags": [
+            {
+              "text": "A space-delimited, case-sensitive list of prompts to present the user.\nIf you don't specify this parameter, the user will be prompted only the first time your project requests access.\n\n**Possible values:**\n- `none`: Don't display any authentication or consent screens. Must not be specified with other values.\n- `consent`: Prompt the user for consent.\n- `select_account`: Prompt the user to select an account.\n\n**Examples:**\n- `prompt: 'consent'` - Always show consent screen\n- `prompt: 'select_account'` - Always show account selection\n- `prompt: 'consent select_account'` - Show both consent and account selection\n\n**Note:** This parameter only affects web platform behavior. Mobile platforms use their own native prompts.",
+              "name": "description"
+            },
+            {
+              "text": "'consent'",
+              "name": "example"
+            },
+            {
+              "text": "'select_account'",
+              "name": "example"
+            },
+            {
+              "text": "'consent select_account'",
+              "name": "example"
+            },
+            {
+              "text": " [Google OAuth2 Prompt Parameter](https://developers.google.com/identity/protocols/oauth2/openid-connect#prompt)",
+              "name": "see"
+            },
+            {
+              "text": "7.12.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Prompt parameter for Google OAuth (Web only)",
+          "complexTypes": [],
+          "type": "'none' | 'consent' | 'select_account' | 'consent select_account' | 'select_account consent' | undefined"
+        }
+      ]
+    },
+    {
+      "name": "AppleProviderOptions",
+      "slug": "appleprovideroptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "scopes",
+          "tags": [
+            {
+              "text": "An array of scopes to request during login",
+              "name": "description"
+            },
+            {
+              "text": "[\"name\", \"email\"]\ndefault: [\"name\", \"email\"]",
+              "name": "example"
+            }
+          ],
+          "docs": "Scopes",
+          "complexTypes": [],
+          "type": "string[] | undefined"
+        },
+        {
+          "name": "nonce",
+          "tags": [
+            {
+              "text": "nonce",
+              "name": "description"
+            }
+          ],
+          "docs": "Nonce",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "state",
+          "tags": [
+            {
+              "text": "state",
+              "name": "description"
+            }
+          ],
+          "docs": "State",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "useBroadcastChannel",
+          "tags": [
+            {
+              "text": "When enabled, uses Broadcast Channel API for communication instead of URL redirects.\nOnly applicable on platforms that support Broadcast Channel (Android).",
+              "name": "description"
+            },
+            {
+              "text": "false",
+              "name": "default"
+            }
+          ],
+          "docs": "Use Broadcast Channel for authentication flow",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        }
+      ]
+    },
+    {
+      "name": "TwitterLoginOptions",
+      "slug": "twitterloginoptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "scopes",
+          "tags": [
+            {
+              "text": "['tweet.read','users.read','offline.access']",
+              "name": "example"
+            }
+          ],
+          "docs": "Additional scopes to request during login.\nIf omitted the plugin falls back to the default scopes configured during initialization.",
+          "complexTypes": [],
+          "type": "string[] | undefined"
+        },
+        {
+          "name": "state",
+          "tags": [],
+          "docs": "Provide a custom OAuth state value.\nWhen not provided the plugin generates a cryptographically random value.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "codeVerifier",
+          "tags": [],
+          "docs": "Provide a pre-computed PKCE code verifier (mostly used for testing).\nWhen omitted the plugin generates a secure verifier automatically.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "redirectUrl",
+          "tags": [],
+          "docs": "Override the redirect URI for a single login call.\nUseful when the same app supports multiple callback URLs per platform.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "forceLogin",
+          "tags": [],
+          "docs": "Force the consent screen on every attempt, maps to `force_login=true`.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        }
+      ]
+    },
+    {
+      "name": "isLoggedInOptions",
+      "slug": "isloggedinoptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "provider",
+          "tags": [
+            {
+              "text": "Provider for the isLoggedIn",
+              "name": "description"
+            }
+          ],
+          "docs": "Provider",
+          "complexTypes": [],
+          "type": "'apple' | 'google' | 'facebook' | 'twitter'"
+        }
+      ]
+    },
+    {
+      "name": "AuthorizationCode",
+      "slug": "authorizationcode",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "jwt",
+          "tags": [
+            {
+              "text": "A JSON web token",
+              "name": "description"
+            }
+          ],
+          "docs": "Jwt",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "accessToken",
+          "tags": [
+            {
+              "text": "An access token",
+              "name": "description"
+            }
+          ],
+          "docs": "Access Token",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "AuthorizationCodeOptions",
+      "slug": "authorizationcodeoptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "provider",
+          "tags": [
+            {
+              "text": "Provider for the authorization code",
+              "name": "description"
+            }
+          ],
+          "docs": "Provider",
+          "complexTypes": [],
+          "type": "'apple' | 'google' | 'facebook' | 'twitter'"
+        }
+      ]
+    },
+    {
+      "name": "FacebookGetProfileResponse",
+      "slug": "facebookgetprofileresponse",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "profile",
+          "tags": [],
+          "docs": "Facebook profile data",
+          "complexTypes": [],
+          "type": "{ [key: string]: any; id: string | null; name: string | null; email: string | null; first_name: string | null; last_name: string | null; picture?: { data: { height: number | null; is_silhouette: boolean | null; url: string | null; width: number | null; }; } | null | undefined; }"
+        }
+      ]
+    },
+    {
+      "name": "FacebookRequestTrackingResponse",
+      "slug": "facebookrequesttrackingresponse",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "status",
+          "tags": [],
+          "docs": "App tracking authorization status",
+          "complexTypes": [],
+          "type": "'authorized' | 'denied' | 'notDetermined' | 'restricted'"
+        }
+      ]
+    },
+    {
+      "name": "FacebookGetProfileOptions",
+      "slug": "facebookgetprofileoptions",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "fields",
+          "tags": [
+            {
+              "text": "[\"id\", \"name\", \"email\", \"picture\"]",
+              "name": "example"
+            }
+          ],
+          "docs": "Fields to retrieve from Facebook profile",
+          "complexTypes": [],
+          "type": "string[] | undefined"
+        }
+      ]
+    }
+  ],
+  "enums": [],
+  "typeAliases": [
+    {
+      "name": "ProviderResponseMap",
+      "slug": "providerresponsemap",
+      "docs": "",
+      "types": [
+        {
+          "text": "{\n  facebook: FacebookLoginResponse;\n  google: GoogleLoginResponse;\n  apple: AppleProviderResponse;\n  twitter: TwitterLoginResponse;\n}",
+          "complexTypes": [
+            "FacebookLoginResponse",
+            "GoogleLoginResponse",
+            "AppleProviderResponse",
+            "TwitterLoginResponse"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GoogleLoginResponse",
+      "slug": "googleloginresponse",
+      "docs": "",
+      "types": [
+        {
+          "text": "GoogleLoginResponseOnline",
+          "complexTypes": [
+            "GoogleLoginResponseOnline"
+          ]
+        },
+        {
+          "text": "GoogleLoginResponseOffline",
+          "complexTypes": [
+            "GoogleLoginResponseOffline"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "LoginOptions",
+      "slug": "loginoptions",
+      "docs": "",
+      "types": [
+        {
+          "text": "{\n      provider: 'facebook';\n      options: FacebookLoginOptions;\n    }",
+          "complexTypes": [
+            "FacebookLoginOptions"
+          ]
+        },
+        {
+          "text": "{\n      provider: 'google';\n      options: GoogleLoginOptions;\n    }",
+          "complexTypes": [
+            "GoogleLoginOptions"
+          ]
+        },
+        {
+          "text": "{\n      provider: 'apple';\n      options: AppleProviderOptions;\n    }",
+          "complexTypes": [
+            "AppleProviderOptions"
+          ]
+        },
+        {
+          "text": "{\n      provider: 'twitter';\n      options: TwitterLoginOptions;\n    }",
+          "complexTypes": [
+            "TwitterLoginOptions"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Extract",
+      "slug": "extract",
+      "docs": "Extract from T those types that are assignable to U",
+      "types": [
+        {
+          "text": "T extends U ? T : never",
+          "complexTypes": [
+            "T",
+            "U"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ProviderSpecificCallResponseMap",
+      "slug": "providerspecificcallresponsemap",
+      "docs": "",
+      "types": [
+        {
+          "text": "{\n  'facebook#getProfile': FacebookGetProfileResponse;\n  'facebook#requestTracking': FacebookRequestTrackingResponse;\n}",
+          "complexTypes": [
+            "FacebookGetProfileResponse",
+            "FacebookRequestTrackingResponse"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ProviderSpecificCall",
+      "slug": "providerspecificcall",
+      "docs": "",
+      "types": [
+        {
+          "text": "'facebook#getProfile'",
+          "complexTypes": []
+        },
+        {
+          "text": "'facebook#requestTracking'",
+          "complexTypes": []
+        }
+      ]
+    },
+    {
+      "name": "ProviderSpecificCallOptionsMap",
+      "slug": "providerspecificcalloptionsmap",
+      "docs": "",
+      "types": [
+        {
+          "text": "{\n  'facebook#getProfile': FacebookGetProfileOptions;\n  'facebook#requestTracking': FacebookRequestTrackingOptions;\n}",
+          "complexTypes": [
+            "FacebookGetProfileOptions",
+            "FacebookRequestTrackingOptions"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FacebookRequestTrackingOptions",
+      "slug": "facebookrequesttrackingoptions",
+      "docs": "",
+      "types": [
+        {
+          "text": "Record<string, never>",
+          "complexTypes": [
+            "Record"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Record",
+      "slug": "record",
+      "docs": "Construct a type with a set of properties K of type T",
+      "types": [
+        {
+          "text": "{\r\n    [P in K]: T;\r\n}",
+          "complexTypes": [
+            "K",
+            "T"
+          ]
+        }
+      ]
+    }
+  ],
+  "pluginConfigs": []
+}
