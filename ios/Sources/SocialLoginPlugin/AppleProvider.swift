@@ -426,7 +426,10 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
                 let firstName = fullName?.givenName ?? ""
                 let lastName = fullName?.familyName ?? ""
 
-                self.sendRequest(code: response.accessToken?.token ?? "", identityToken: response.idToken ?? "", email: decodedEmail ?? "", firstName: firstName, lastName: lastName, completion: { result in
+                // Proper token exchange keeps the one-time authorization code separate
+                // from the access-token-shaped legacy response.
+                let redirectCode = response.authorizationCode ?? response.accessToken?.token ?? ""
+                self.sendRequest(code: redirectCode, identityToken: response.idToken ?? "", email: decodedEmail ?? "", firstName: firstName, lastName: lastName, completion: { result in
                     switch result {
                     case .success(let appleResponse):
                         self.finish(.success(appleResponse))
@@ -679,7 +682,7 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
                 }
             case .failure(let error):
                 if let statusCode = response.response?.statusCode {
-                    print("error", response.debugDescription)
+                    print("Apple token exchange failed with HTTP status (statusCode): (error.localizedDescription)")
                     completion(.failure(.invalidResponseCode(statusCode: statusCode)))
                 } else {
                     completion(.failure(.responseError(error)))
