@@ -138,6 +138,25 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
+    private func reject(_ error: Error, call: CAPPluginCall) {
+        let nsError = error as NSError
+        var data: [String: Any] = [
+            "nativeDomain": nsError.domain,
+            "nativeCode": nsError.code
+        ]
+
+        if let failureReason = nsError.userInfo[NSLocalizedFailureReasonErrorKey] as? String {
+            data["failureReason"] = failureReason
+        }
+
+        if let recoverySuggestion = nsError.userInfo[NSLocalizedRecoverySuggestionErrorKey] as? String {
+            data["recoverySuggestion"] = recoverySuggestion
+        }
+
+        // Preserve the numeric native code for diagnostics without serializing arbitrary userInfo.
+        call.reject(nsError.localizedDescription, String(nsError.code), error, data)
+    }
+
     @objc func getPluginVersion(_ call: CAPPluginCall) {
         call.resolve(["version": self.pluginVersion])
     }
@@ -253,7 +272,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     let authorizationCode = try res.get()
                     call.resolve([ "jwt": authorizationCode.idToken ?? "", "accessToken": authorizationCode.accessToken ])
                 } catch {
-                    call.reject(error.localizedDescription)
+                    reject(error, call: call)
                 }
             }
         }
@@ -274,7 +293,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     }
                     call.resolve(response)
                 } catch {
-                    call.reject(error.localizedDescription)
+                    reject(error, call: call)
                 }
             }
         }
@@ -294,7 +313,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     }
                     call.resolve(response)
                 } catch {
-                    call.reject(error.localizedDescription)
+                    reject(error, call: call)
                 }
             }
         }
@@ -335,7 +354,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     let isLogged = try res.get()
                     call.resolve([ "isLoggedIn": isLogged ])
                 } catch {
-                    call.reject(error.localizedDescription)
+                    reject(error, call: call)
                 }
             }
         }
@@ -352,7 +371,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     let status = try res.get()
                     call.resolve([ "isLoggedIn": status ])
                 } catch {
-                    call.reject(error.localizedDescription)
+                    reject(error, call: call)
                 }
             }
         }
@@ -390,6 +409,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Apple Sign-In provider is disabled. Dependencies are not available. Ensure Alamofire dependency is included in your Podfile")
                 return
             }
+            apProvider.setPresentationWindow(self.bridge?.webView?.window ?? self.bridge?.viewController?.viewIfLoaded?.window)
             apProvider.login(payload: payload) { (result: Result<AppleProviderResponse, Error>) in
                 self.handleLoginResult(result, call: call)
             }
@@ -427,7 +447,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 case .success(let profile):
                     call.resolve(["profile": profile as Any])
                 case .failure(let error):
-                    call.reject(error.localizedDescription)
+                    reject(error, call: call)
                 }
             })
         case "facebook#requestTracking":
@@ -440,7 +460,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 case .success(let status):
                     call.resolve(["status": status])
                 case .failure(let error):
-                    call.reject(error.localizedDescription)
+                    reject(error, call: call)
                 }
             })
         default:
@@ -534,7 +554,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
         case .success:
             call.resolve()
         case .failure(let error):
-            call.reject(error.localizedDescription)
+            reject(error, call: call)
         }
     }
 
@@ -559,7 +579,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Invalid refresh response")
             }
         case .failure(let error):
-            call.reject(error.localizedDescription)
+            reject(error, call: call)
         }
     }
 
@@ -577,7 +597,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("User not logged in")
             }
         case .failure(let error):
-            call.reject(error.localizedDescription)
+            reject(error, call: call)
         }
     }
 
@@ -605,9 +625,14 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                     "idToken": appleResponse.idToken ?? ""
                 ]
 
+                var result = appleResult
+                if let authorizationCode = appleResponse.authorizationCode {
+                    result["authorizationCode"] = authorizationCode
+                }
+
                 call.resolve([
                     "provider": "apple",
-                    "result": appleResult
+                    "result": result
                 ])
             } else if let googleResponse = response as? GoogleLoginResponse {
                 if let serverAuthCode = googleResponse.serverAuthCode {
@@ -684,7 +709,7 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Unsupported provider response")
             }
         case .failure(let error):
-            call.reject(error.localizedDescription)
+            reject(error, call: call)
         }
     }
 }

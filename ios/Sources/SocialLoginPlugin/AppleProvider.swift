@@ -57,9 +57,12 @@ enum AppleProviderError: Error {
     case missingExpiresIn
     case missingRefreshToken
     case missingIdToken
+    case missingAuthorizationCode
     case missingUserId
     case unknownError
     case invalidIdToken
+    case invalidAuthorizationCredential
+    case authorizationPresentationWindowUnavailable
 }
 
 // Implement LocalizedError for AppleProviderError
@@ -94,10 +97,16 @@ extension AppleProviderError: LocalizedError {
             return NSLocalizedString("Refresh token not found in response.", comment: "")
         case .missingIdToken:
             return NSLocalizedString("ID token not found in response.", comment: "")
+        case .missingAuthorizationCode:
+            return NSLocalizedString("Authorization code not found in response.", comment: "")
         case .missingUserId:
             return NSLocalizedString("User ID not found in ID token.", comment: "")
         case .invalidIdToken:
             return NSLocalizedString("Invalid ID token format.", comment: "")
+        case .invalidAuthorizationCredential:
+            return NSLocalizedString("Apple returned an unsupported authorization credential.", comment: "")
+        case .authorizationPresentationWindowUnavailable:
+            return NSLocalizedString("Unable to find an active window for Apple Sign-In.", comment: "")
         }
     }
 }
@@ -105,6 +114,8 @@ extension AppleProviderError: LocalizedError {
 #if canImport(Alamofire)
 class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     private var completion: ((Result<AppleProviderResponse, Error>) -> Void)?
+    private var authorizationController: ASAuthorizationController?
+    private weak var presentationWindow: UIWindow?
 
     // Instance variables
     var idToken: String?
@@ -113,6 +124,7 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
 
     private let TOKEN_URL = "https://appleid.apple.com/auth/token"
     private let SHARED_PREFERENCE_NAME = "AppleProviderSharedPrefs_0eda2642"
+    private let KEYCHAIN_ACCOUNT = "apple-provider-tokens"
     private var redirectUrl = ""
     private let USER_INFO_KEY = "AppleUserInfo"
     private var useProperTokenExchange = false
@@ -126,8 +138,62 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
         do {
             try retrieveState()
         } catch {
-            print("retrieveState error: \(error)")
+            print("Apple retrieveState failed: \(error.localizedDescription)")
         }
+    }
+
+    func setPresentationWindow(_ window: UIWindow?) {
+        presentationWindow = window
+    }
+
+    private var keychainQuery: [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: SHARED_PREFERENCE_NAME,
+            kSecAttrAccount as String: KEYCHAIN_ACCOUNT
+        ]
+    }
+
+    private func readKeychainState() throws -> Data? {
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(keychainQuery as CFDictionary, &result)
+
+        if status == errSecItemNotFound {
+            return nil
+        }
+
+        guard status == errSecSuccess else {
+            throw NSError(
+                domain: "AppleProvider.Keychain",
+                code: Int(status),
+                userInfo: [NSLocalizedDescriptionKey: "Unable to read Apple Sign-In state from Keychain."]
+            )
+        }
+
+        return result as? Data
+    }
+
+    private func writeKeychainState(_ data: Data) throws {
+        SecItemDelete(keychainQuery as CFDictionary)
+
+        var attributes = keychainQuery
+        attributes[kSecValueData as String] = data
+        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+
+        let status = SecItemAdd(attributes as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            throw NSError(
+                domain: "AppleProvider.Keychain",
+                code: Int(status),
+                userInfo: [NSLocalizedDescriptionKey: "Unable to save Apple Sign-In state in Keychain."]
+            )
+        }
+    }
+
+    private func clearPersistedState() {
+        SecItemDelete(keychainQuery as CFDictionary)
+        // Remove state written by versions before this fork so it cannot remain in plaintext preferences.
+        UserDefaults.standard.removeObject(forKey: SHARED_PREFERENCE_NAME)
     }
 
     func persistState(idToken: String, refreshToken: String, accessToken: String) throws {
@@ -146,34 +212,27 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
         // Convert the object to JSON data
         let jsonData = try JSONSerialization.data(withJSONObject: object, options: [])
 
-        // Convert JSON data to a string for logging
-        if let jsonString = String(data: jsonData, encoding: .utf8) {
-            // Log the object
-            print("Apple persistState: \(jsonString)")
-
-            // Save the JSON string to UserDefaults or use your helper method
-            UserDefaults.standard.set(jsonString, forKey: SHARED_PREFERENCE_NAME)
-        } else {
-            print("Error converting JSON data to String")
-        }
+        try writeKeychainState(jsonData)
+        // Do not leave previously persisted tokens in plaintext preferences.
+        UserDefaults.standard.removeObject(forKey: SHARED_PREFERENCE_NAME)
     }
 
     func retrieveState() throws {
-        // Retrieve the JSON string from persistent storage
-        guard let jsonString = UserDefaults.standard.string(forKey: SHARED_PREFERENCE_NAME) else {
-            print("No saved state found")
-            return
+        var jsonData = try readKeychainState()
+        var migratedLegacyState = false
+
+        // Migrate one-time from the old plaintext UserDefaults location.
+        if jsonData == nil,
+           let legacyJsonString = UserDefaults.standard.string(forKey: SHARED_PREFERENCE_NAME),
+           let legacyJsonData = legacyJsonString.data(using: .utf8) {
+            jsonData = legacyJsonData
+            migratedLegacyState = true
         }
 
-        // Convert JSON string to Data
-        guard let jsonData = jsonString.data(using: .utf8) else {
-            print("Error converting JSON string to Data")
-            return
-        }
+        guard let jsonData = jsonData else { return }
 
         // Parse the JSON data
         guard let object = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: String] else {
-            print("Error parsing JSON data")
             return
         }
 
@@ -181,7 +240,6 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
         guard let idToken = object["idToken"],
               let refreshToken = object["refreshToken"],
               let accessToken = object["accessToken"] else {
-            print("Error: Missing tokens in retrieved data")
             return
         }
 
@@ -190,30 +248,77 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
         self.refreshToken = refreshToken
         self.accessToken = accessToken
 
-        // Log the retrieved object
-        print("Apple retrieveState: \(object)")
+        if migratedLegacyState {
+            try writeKeychainState(jsonData)
+            UserDefaults.standard.removeObject(forKey: SHARED_PREFERENCE_NAME)
+        }
+    }
+
+    private func resolvePresentationWindow() -> UIWindow? {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+
+        return windows.first(where: { $0.isKeyWindow && !$0.isHidden })
+            ?? windows.first(where: { !$0.isHidden })
+    }
+
+    private func finish(_ result: Result<AppleProviderResponse, Error>) {
+        let callback = completion
+        completion = nil
+        authorizationController = nil
+        callback?(result)
     }
 
     func login(payload: [String: Any], completion: @escaping (Result<AppleProviderResponse, Error>) -> Void) {
+        if authorizationController != nil {
+            completion(.failure(NSError(
+                domain: "AppleProvider",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Apple Sign-In is already in progress."]
+            )))
+            return
+        }
+
         self.completion = completion
 
-        let appleIDProvider = ASAuthorizationAppleIDProvider()
-        let request = appleIDProvider.createRequest()
+        let startAuthorization: () -> Void = { [weak self] in
+            guard let self = self else { return }
 
-        if let scopes = payload["scopes"] as? [ASAuthorization.Scope] {
-            request.requestedScopes = scopes
+            let window = self.presentationWindow ?? self.resolvePresentationWindow()
+            guard let window = window else {
+                self.finish(.failure(AppleProviderError.authorizationPresentationWindowUnavailable))
+                return
+            }
+            self.presentationWindow = window
+
+            let appleIDProvider = ASAuthorizationAppleIDProvider()
+            let request = appleIDProvider.createRequest()
+
+            if let scopes = payload["scopes"] as? [ASAuthorization.Scope] {
+                request.requestedScopes = scopes
+            } else {
+                request.requestedScopes = [.fullName, .email]
+            }
+
+            if let nonce = payload["nonce"] as? String {
+                request.nonce = nonce
+            }
+
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            // ASAuthorizationController does not retain itself for the duration of the request.
+            // Keep a strong reference until one of the delegate callbacks completes.
+            self.authorizationController = controller
+            controller.delegate = self
+            controller.presentationContextProvider = self
+            controller.performRequests()
+        }
+
+        if Thread.isMainThread {
+            startAuthorization()
         } else {
-            request.requestedScopes = [.fullName, .email]
+            DispatchQueue.main.async(execute: startAuthorization)
         }
-
-        if let nonce = payload["nonce"] as? String {
-            request.nonce = nonce
-        }
-
-        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
-        authorizationController.delegate = self
-        authorizationController.presentationContextProvider = self
-        authorizationController.performRequests()
     }
 
     func logout(completion: @escaping (Result<Void, Error>) -> Void) {
@@ -228,7 +333,7 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
         self.refreshToken = nil
         self.accessToken = nil
 
-        UserDefaults.standard.removeObject(forKey: SHARED_PREFERENCE_NAME)
+        clearPersistedState()
         completion(.success(()))
         return
     }
@@ -241,7 +346,12 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
     // MARK: - ASAuthorizationControllerDelegate
 
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            finish(.failure(AppleProviderError.invalidAuthorizationCredential))
+            return
+        }
+
+        do {
             let userIdentifier = appleIDCredential.user
             let fullName = appleIDCredential.fullName
             let email = appleIDCredential.email
@@ -259,6 +369,16 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
             // Create proper access token and decode JWT
             let authorizationCode = String(data: appleIDCredential.authorizationCode ?? Data(), encoding: .utf8) ?? ""
             let idToken = String(data: appleIDCredential.identityToken ?? Data(), encoding: .utf8) ?? ""
+
+            guard !idToken.isEmpty else {
+                finish(.failure(AppleProviderError.missingIdToken))
+                return
+            }
+
+            if useProperTokenExchange && authorizationCode.isEmpty {
+                finish(.failure(AppleProviderError.missingAuthorizationCode))
+                return
+            }
 
             var accessToken: AccessTokenApple?
 
@@ -286,7 +406,6 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
 
                 if let decodedData = Data(base64Encoded: base64String, options: []),
                    let payload = try? JSONSerialization.jsonObject(with: decodedData, options: []) as? [String: Any] {
-                    print("payload", payload)
                     decodedEmail = payload["email"] as? String ?? email
                 }
             }
@@ -310,19 +429,18 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
                 self.sendRequest(code: response.accessToken?.token ?? "", identityToken: response.idToken ?? "", email: decodedEmail ?? "", firstName: firstName, lastName: lastName, completion: { result in
                     switch result {
                     case .success(let appleResponse):
-                        self.completion?(.success(appleResponse))
+                        self.finish(.success(appleResponse))
                     case .failure(let error):
-                        self.completion?(.failure(error))
+                        self.finish(.failure(error))
                     }
                 }, skipUser: fullName?.givenName == nil)
             } else {
-                do {
-                    try self.persistState(idToken: response.idToken ?? "", refreshToken: "", accessToken: "")
-                    self.completion?(.success(response))
-                } catch {
-                    self.completion?(.failure(AppleProviderError.specificJsonWritingError(error)))
-                }
+                try self.persistState(idToken: response.idToken ?? "", refreshToken: "", accessToken: "")
+                self.finish(.success(response))
             }
+        }
+        catch {
+            finish(.failure(AppleProviderError.specificJsonWritingError(error)))
         }
     }
 
@@ -353,7 +471,7 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
             // Convert the user dictionary to a JSON string
             guard let userData = try? JSONSerialization.data(withJSONObject: user, options: []),
                   let userJSONString = String(data: userData, encoding: .utf8) else {
-                print("Error converting user data to JSON string")
+                completion(.failure(.userDataSerializationError))
                 return
             }
 
@@ -372,19 +490,13 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
         .response { response in
             // Access the HTTPURLResponse
             if let httpResponse = response.response {
-                print("Status Code: \(httpResponse.statusCode)")
-
                 // Check if the response is a redirect
                 if (300...399).contains(httpResponse.statusCode) {
                     if let location = httpResponse.headers.value(for: "Location") {
-                        print("Redirect Location: \(location)")
-
                         // Parse the redirect URL
                         if let redirectURL = URL(string: location),
                            let urlComponents = URLComponents(url: redirectURL, resolvingAgainstBaseURL: false),
                            let pathComponents = urlComponents.queryItems {
-
-                            print("Query items: \(String(describing: urlComponents.queryItems))")
 
                             // there are 4 main ways this can go:
                             // 1. it provides the "code" and we fetch apple servers in order to get the JWT (yuck)
@@ -467,28 +579,19 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
 
                         } else {
                             completion(.failure(.pathComponentsNotFound))
-                            print("Path components not found")
                             return
                         }
                     } else {
                         completion(.failure(.noLocationHeader))
-                        print("No Location header found in the redirect response")
                         return
                     }
                 } else {
-                    // Handle non-redirect responses
-                    if let data = response.data,
-                       let responseString = String(data: data, encoding: .utf8) {
-                        print("Response: \(responseString)")
-                    } else {
-                        print("No response data received")
-                    }
-
                     completion(.failure(.invalidResponseCode(statusCode: httpResponse.statusCode)))
                 }
             } else if let error = response.error {
                 completion(.failure(.responseError(error)))
-                print("Error: \(error)")
+            } else {
+                completion(.failure(.unknownError))
             }
         }
     }
@@ -559,17 +662,11 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
                             authorizationCode: nil
                         )
 
-                        // Log the tokens (replace with your logging mechanism)
-                        print("Apple Access Token is: \(accessToken)")
-                        print("Expires in: \(expiresIn)")
-                        print("Refresh token: \(refreshToken)")
-                        print("ID Token: \(idToken)")
-                        print("Apple User ID: \(userId)")
-
                         do {
                             try self.persistState(idToken: idToken, refreshToken: refreshToken, accessToken: accessToken)
                         } catch {
                             completion(.failure(.specificJsonWritingError(error)))
+                            return
                         }
 
                         // Call the completion handler with the response
@@ -592,13 +689,13 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
     }
 
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        completion?(.failure(error))
+        finish(.failure(error))
     }
 
     // MARK: - ASAuthorizationControllerPresentationContextProviding
 
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return UIApplication.shared.windows.first!
+        return presentationWindow ?? resolvePresentationWindow() ?? ASPresentationAnchor()
     }
 
     private func persistName(userId: String, givenName: String?, familyName: String?) {
@@ -631,6 +728,8 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
         fatalError("Apple Sign-In is not available. Include Alamofire dependency in your Podfile.")
     }
 
+    func setPresentationWindow(_ window: UIWindow?) {}
+
     func login(payload: [String: Any], completion: @escaping (Result<AppleProviderResponse, Error>) -> Void) {
         completion(.failure(NSError(domain: "AppleProvider", code: -1, userInfo: [NSLocalizedDescriptionKey: "Alamofire is not available. Include Alamofire dependency in your Podfile."])))
     }
@@ -646,7 +745,7 @@ class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizatio
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {}
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {}
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return UIApplication.shared.windows.first!
+        return ASPresentationAnchor()
     }
 }
 #endif
